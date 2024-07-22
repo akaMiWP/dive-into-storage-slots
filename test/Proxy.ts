@@ -13,9 +13,12 @@ describe("Proxy", function () {
     const Logic1 = await hre.ethers.getContractFactory("Logic1");
     const logic1 = await Logic1.deploy();
 
+    const Logic2 = await hre.ethers.getContractFactory("Logic2");
+    const logic2 = await Logic2.deploy();
+
     const [signer] = await hre.ethers.getSigners();
 
-    return { proxy, logic1, signer };
+    return { proxy, logic1, logic2, signer };
   }
 
   async function retrieveChangeXCalldata(x: number) {
@@ -53,6 +56,33 @@ describe("Proxy", function () {
       valueInString = await getStorageSlot(await proxy.getAddress(), "0x0");
       valueInInt = parseInt(valueInString);
       expect(valueInInt).equal(56);
+    });
+
+    it("expect logic2 to consume x from the proxy storage", async function () {
+      const { proxy, logic1, logic2, signer } = await loadFixture(
+        deployContracts
+      );
+      let valueInString = await getStorageSlot(await proxy.getAddress(), "0x0");
+      let valueInInt = parseInt(valueInString);
+      await proxy.setImplementationAddress(await logic1.getAddress());
+      let calldata = await retrieveChangeXCalldata(56);
+      let txRequest = {
+        to: await proxy.getAddress(),
+        data: calldata,
+      };
+      let txResponse = await signer.sendTransaction(txRequest);
+
+      await proxy.setImplementationAddress(await logic2.getAddress());
+      calldata = await retrieveChangeXCalldata(44);
+      txRequest = {
+        to: await proxy.getAddress(),
+        data: calldata,
+      };
+      txResponse = await signer.sendTransaction(txRequest);
+
+      valueInString = await getStorageSlot(await proxy.getAddress(), "0x0");
+      valueInInt = parseInt(valueInString);
+      expect(valueInInt).equal(100);
     });
   });
 });

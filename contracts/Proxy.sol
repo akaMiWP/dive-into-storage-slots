@@ -28,3 +28,11 @@ contract Logic1 {
         x = _x;
     }
 }
+
+contract Logic2 {
+    uint256 x = 0;
+
+    function changeX(uint256 _x) external {
+        x += _x;
+    }
+}
